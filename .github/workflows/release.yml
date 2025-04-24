@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build and Release
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgnutls28-dev
+
+      - name: Create config
+        run: make superbird_defconfig
+
+      - name: Build U-Boot
+        run: make -j$(nproc)
+
+      - name: Add to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload ${{github.event.release.tag_name}} u-boot.bin
+          gh release upload ${{github.event.release.tag_name}} .config
